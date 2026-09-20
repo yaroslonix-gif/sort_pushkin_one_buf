@@ -1,0 +1,1 @@
+gcc base.c qsort_prog.c -o qsort_prog
