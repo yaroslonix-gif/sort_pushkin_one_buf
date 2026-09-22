@@ -40,3 +40,10 @@ void print_line_color(FILE* out_stream, const char* color) {
     print_line(out_stream);
     fprintf(out_stream, "%s", RESET_COLOR_TEXT);
 }
+
+size_t get_file_size(int file) {
+    struct stat stat_file = {0};
+    fstat(file, &stat_file);
+    
+    return stat_file.st_size;
+}
