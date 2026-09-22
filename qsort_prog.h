@@ -12,11 +12,16 @@ struct ptr_sort_func {
     char* func_name;
 };
 
+struct ptr_comporator_func {
+    int (*comporator_func)(const void* ptr_a, const void* ptr_b);
+};
 
 /////////////////////////////////////////////////////////// КОНСТАНТЫ ///////////////////////////////////////////////////////////
 extern const struct ptr_sort_func sort_funcs[];
 extern const size_t sort_funcs_sz;
 
+extern const struct ptr_comporator_func comporator_funcs[];
+extern const size_t comporator_funcs_sz;
 
 /////////////////////////////////////////////////////////// ФУНКЦИИ ///////////////////////////////////////////////////////////
 void sort_pushkin(struct ptr_sort_func sort_func);
@@ -43,6 +48,10 @@ char* read_line(FILE* source);
 
 struct String* read_file_by_lines(const char* file_name, size_t* num_of_lines);
 
+char* read_file_in_one_buf(const int file_in, size_t* sz_text);
+
+struct String* pars_text_to_lines(char* data, const size_t sz_text, size_t* num_of_lines);
+
 struct String* read_file_by_lines_one_buf(const char* file_name, size_t* num_of_lines);
 
 
@@ -54,3 +63,5 @@ void print_text_with_ptr(FILE* file_out, const struct String* data, const size_t
 void debug_qsort_print(struct String* data, size_t left, size_t right, size_t data_sz, char* reason_of_func_call);
 
 struct ptr_sort_func get_sort_func(const char* func_name);
+
+size_t count_symbolsin_text(const char* text, const char targ_ch);
