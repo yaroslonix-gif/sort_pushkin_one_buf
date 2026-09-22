@@ -1,6 +1,8 @@
 #include "base.h"
 
 
+FILE *LOGG_F_USE_ONLY_FOR_LOGG = NULL; // ИСПОЛЬЗОВАТЬ ТОЛЬКО ПО НАЗНАЧЕНИЮ
+
 
 void universal_swap(const void* restrict ptr_a, const void* restrict ptr_b, size_t elem_sz) {
     ASSERT(ptr_a != NULL, NULL_ERROR);

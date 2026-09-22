@@ -1,38 +1,63 @@
 #include "qsort_prog.h"
 
-int main() {
-    sort_pushkin();
 
+const struct ptr_sort_func sort_funcs[] = {{qsort, "standard_qsort"}, 
+                                           {run_qsort, "custom_qsort"}};
+
+const size_t sort_funcs_sz = sizeof(sort_funcs) / sizeof(sort_funcs[0]);
+
+
+int main(int argc, char* argv[]) {
+    START_LOGG;
+
+    clock_t start = clock();
+
+    struct ptr_sort_func sort_func = sort_funcs[0];
+    if (argc == 2)
+        sort_func = get_sort_func(argv[1]);
+    
+    PRINT_COLOR(GREEN_TEXT, "Using %s mode\n", sort_func.func_name);
+    
+    sort_pushkin(sort_func);
+
+    clock_t end = clock();
+    
+    printf("Time: %.3lf\n", (double)(end - start) / CLOCKS_PER_SEC);
+
+    STOP_LOGG;
     return 0;
 }
 
-void sort_pushkin() {
+
+/////////////////////////////////////////////////////////// ФУНКЦИИ ///////////////////////////////////////////////////////////
+void sort_pushkin(struct ptr_sort_func sort_func) {
     size_t n_lines = 0;
     
     struct String* data_ind = read_file_by_lines_one_buf(PUSHKIN_TEXT, &n_lines);
     char* data_for_clear = data_ind[0].str;
 
-    FILE* file_out = fopen("out.txt", "w");
+    FILE* file_out = fopen(OUT_FILE_NAME, "w");
     ASSERT(file_out != NULL, NULL_CANT_OPEN_FILE);
 
     // По алфавиту
-    run_qsort(data_ind, n_lines, sizeof(data_ind[0]), my_compare_string_up);
+    sort_func.sort_func(data_ind, n_lines, sizeof(data_ind[0]), my_compare_string_up);
 
     print_text_with_ptr(file_out, data_ind, n_lines);
     print_line(file_out);
 
     // По алфовиту с конца строк
-    run_qsort(data_ind, n_lines, sizeof(data_ind[0]), compare_string_up_from_right_to_left);
+    sort_func.sort_func(data_ind, n_lines, sizeof(data_ind[0]), compare_string_up_from_right_to_left);
 
     print_text_with_ptr(file_out, data_ind, n_lines);
     print_line(file_out);
 
     // Исходный текст
-    qsort(data_ind, n_lines, sizeof(data_ind[0]), compare_string_by_ptr);
+    sort_func.sort_func(data_ind, n_lines, sizeof(data_ind[0]), compare_string_by_ptr);
     print_text_with_ptr(file_out, data_ind, n_lines);
 
     fclose(file_out);
 
+    // Free
     free(data_for_clear);
     free(data_ind);
 
@@ -43,21 +68,23 @@ void sort_pushkin() {
 /////////////////////////////////////////////////////////// АЛГОРИТМ QSORT ///////////////////////////////////////////////////////////
 void run_qsort(void* data, size_t data_sz, size_t elem_sz, int (*comparator)(const void* ptr_a, const void* ptr_b)) {
     ASSERT(data != NULL, NULL_ERROR);
+    ASSERT(comparator != NULL, NULL_ERROR);
 
     my_qsort(data, data_sz, elem_sz, 0, data_sz - 1, comparator);
 }
 
 void my_qsort(void* data, const size_t data_sz, const size_t elem_sz, int left, int right, int (*comparator)(const void* ptr_a, const void* ptr_b)) {
     ASSERT(data != NULL, NULL_ERROR);
+    ASSERT(comparator != NULL, NULL_ERROR);
 
     if (right <= left) return;
 
     size_t last_left = left;
     size_t last_right = right;
     
-    //PRINT_QSORT_DEBUG("Before swap_sort");
+    //debug_qsort_print(data, left, right, data_sz, "Before swap_qsort");
     swap_qsort(data, data_sz, elem_sz, &left, &right, comparator);
-    //PRINT_QSORT_DEBUG("After swap_sort");
+    //debug_qsort_print(data, left, right, data_sz, "After swap_qsort");
 
     my_qsort(data, data_sz, elem_sz, last_left, right, comparator);
     my_qsort(data, data_sz, elem_sz, right + 1, last_right, comparator);
@@ -67,6 +94,7 @@ void swap_qsort(void* data, const size_t data_sz, const size_t elem_sz, int* lef
     ASSERT(data  != NULL, NULL_ERROR);
     ASSERT(left  != NULL, NULL_ERROR);
     ASSERT(right != NULL, NULL_ERROR);
+    ASSERT(comparator != NULL, NULL_ERROR);
 
     size_t mid_ind = (*left + *right) / 2;
 
@@ -89,12 +117,11 @@ void swap_qsort(void* data, const size_t data_sz, const size_t elem_sz, int* lef
             
             (*left)++;
             (*right)--;
-            //PRINT_QSORT_DEBUG("After swap elements");
+            //debug_qsort_print(data, *left, *right, data_sz, "After swap elements");
         } else {
             break;
         }
-    }
-    
+    }    
 }
 
 /////////////////////////////////////////////////////////// КОМПОРАТОРЫ ///////////////////////////////////////////////////////////
@@ -267,7 +294,6 @@ struct String* read_file_by_lines(const char* file_name, size_t* num_of_lines) {
         data_ind[n_of_lines].str = read_line(file_in);
         data_ind[n_of_lines].len = str_len(data_ind[n_of_lines].str);
 
-
         if (data_ind[n_of_lines].str != NULL) {
             n_of_lines++;
         }
@@ -294,7 +320,6 @@ struct String* read_file_by_lines_one_buf(const char* file_name, size_t* num_of_
     char* data = (char*)calloc(sz_data + 1, sizeof(char));
     ASSERT(data != NULL, NULL_MEMORY_ERR);
 
-
     // realloc for \r
     int sz_text = read(file_in, data, sz_data);
     data = (char*)realloc(data, (sz_text + 1) * sizeof(char));
@@ -306,6 +331,7 @@ struct String* read_file_by_lines_one_buf(const char* file_name, size_t* num_of_
     struct String* data_ind = (struct String*)calloc(sz_data_ind, sizeof(struct String));
     ASSERT(data_ind != NULL, NULL_MEMORY_ERR);
 
+    //==================================== Парсинг текста ====================================//
     char* last_ind = data;
     for (size_t i = 0; i <= sz_text; i++) {
         if (n_of_lines == sz_data_ind) {
@@ -344,13 +370,16 @@ size_t str_len(const char *str) {
     return len;
 }
 
-void print_text_with_ptr(FILE* file_out, const struct String* data, size_t n_lines) {
+void print_text_with_ptr(FILE* file_out, const struct String* data, const size_t n_lines) {
+    ASSERT(file_out != NULL, NULL_ERROR);
+    ASSERT(data != NULL, NULL_ERROR);
+
     for (size_t i = 0; i < n_lines; i++) {
-        fprintf(file_out, "<%p>:<%s>\n", &data[i].str, data[i].str);
+        fprintf(file_out, "< %6d >:< %p >:<%s>\n", i, &data[i].str, data[i].str);
     }
 }
 
-void debug_qsort_print(char* data[], size_t left, size_t right, size_t data_sz, char* reason_of_func_call) {
+void debug_qsort_print(struct String* data, size_t left, size_t right, size_t data_sz, char* reason_of_func_call) {
     ASSERT(data != NULL, NULL_ERROR);
     ASSERT(reason_of_func_call != NULL, NULL_ERROR);
 
@@ -363,14 +392,14 @@ void debug_qsort_print(char* data[], size_t left, size_t right, size_t data_sz, 
     printf("\n");
 
     for (size_t i = 0; i < left; i++)
-        PRINT_COLOR(TURQUOISE_TEXT, "%10s ", data[i]);
+        PRINT_COLOR(TURQUOISE_TEXT, "%10s ", data[i].str);
     
     for (size_t i = left; i < right; i++)
-        PRINT_COLOR(RESET_COLOR_TEXT, "%10s ", data[i]);
+        PRINT_COLOR(RESET_COLOR_TEXT, "%10s ", data[i].str);
 
     
     for (int i = (left > right) ? right + 1 : right; i < data_sz; i++)
-        PRINT_COLOR(RED_TEXT, "%10s ", data[i]);
+        PRINT_COLOR(RED_TEXT, "%10s ", data[i].str);
     
     PRINT_COLOR(GREEN_TEXT, "    left = " TURQUOISE_TEXT "%d" GREEN_TEXT "; right = " RED_TEXT "%d\n", left, right);
 
@@ -396,4 +425,15 @@ void debug_qsort_print(char* data[], size_t left, size_t right, size_t data_sz, 
     }
     
     printf("\n");
+}
+
+struct ptr_sort_func get_sort_func(const char* func_name) {
+    ASSERT(func_name != NULL, NULL_ERROR);
+
+    for (size_t i = 0; i < sort_funcs_sz; i++) {
+        if (strcmp(func_name, sort_funcs[i].func_name) == 0)
+            return sort_funcs[i];
+    }
+
+    return sort_funcs[0];
 }

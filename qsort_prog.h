@@ -1,9 +1,25 @@
 #include "base.h"
 
-#define PUSHKIN_TEXT "Onegin.txt"
+
+/////////////////////////////////////////////////////////// DEFINE ///////////////////////////////////////////////////////////
+#define PUSHKIN_TEXT  "Onegin.txt"
+#define OUT_FILE_NAME "out.txt"
 
 
-void sort_pushkin();
+/////////////////////////////////////////////////////////// STRUCT ///////////////////////////////////////////////////////////
+struct ptr_sort_func {
+    void (*sort_func)(void* data, const size_t data_sz, const size_t elem_sz, int (*comparator)(const void* ptr_a, const void* ptr_b));
+    char* func_name;
+};
+
+
+/////////////////////////////////////////////////////////// КОНСТАНТЫ ///////////////////////////////////////////////////////////
+extern const struct ptr_sort_func sort_funcs[];
+extern const size_t sort_funcs_sz;
+
+
+/////////////////////////////////////////////////////////// ФУНКЦИИ ///////////////////////////////////////////////////////////
+void sort_pushkin(struct ptr_sort_func sort_func);
 
 
 /////////////////////////////////////////////////////////// АЛГОРИТМ QSORT ///////////////////////////////////////////////////////////
@@ -33,6 +49,8 @@ struct String* read_file_by_lines_one_buf(const char* file_name, size_t* num_of_
 /////////////////////////////////////////////////////////// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ///////////////////////////////////////////////////////////
 size_t str_len(const char *str);
 
-void print_text_with_ptr(FILE* file_out, const struct String* data, size_t n_lines);
+void print_text_with_ptr(FILE* file_out, const struct String* data, const size_t n_lines);
 
-void debug_qsort_print(char* data[], size_t left, size_t right, size_t data_sz, char* reason_of_func_call);
+void debug_qsort_print(struct String* data, size_t left, size_t right, size_t data_sz, char* reason_of_func_call);
+
+struct ptr_sort_func get_sort_func(const char* func_name);
